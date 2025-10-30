@@ -1,18 +1,30 @@
-chrome.webNavigation.onBeforeNavigate.addListener((details) => {
+const updateRules = () => {
   chrome.storage.sync.get('blockedWebsites', (data) => {
     const blockedWebsites = data.blockedWebsites || [];
-    const url = new URL(details.url);
-    const blockedSite = blockedWebsites.find((item) => url.hostname.includes(item.website));
-
-    if (blockedSite) {
-      // Remove the URL from history
-      chrome.history.deleteUrl({ url: details.url });
-      
-      if (blockedSite.redirect) {
-        chrome.tabs.update(details.tabId, { url: blockedSite.redirect });
-      } else {
-        chrome.tabs.update(details.tabId, { url: chrome.runtime.getURL('blocked.html') });
+    const rules = blockedWebsites.map((item, index) => ({
+      id: index + 1,
+      priority: 1,
+      action: {
+        type: 'redirect',
+        redirect: { url: item.redirect || chrome.runtime.getURL('blocked.html') }
+      },
+      condition: {
+        urlFilter: `||${new URL(item.website).hostname}`,
+        resourceTypes: ['main_frame']
       }
-    }
+    }));
+
+    chrome.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds: Array.from({ length: 50 }, (_, i) => i + 1), // Remove existing rules
+      addRules: rules
+    });
   });
-}, { url: [{ schemes: ['http', 'https'] }] });
+};
+
+chrome.runtime.onInstalled.addListener(() => {
+  updateRules();
+});
+
+chrome.storage.onChanged.addListener(() => {
+  updateRules();
+});
