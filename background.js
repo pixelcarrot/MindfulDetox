@@ -36,6 +36,34 @@ const updateRules = () => {
       removeRuleIds: Array.from({ length: 50 }, (_, i) => i + 1), // Remove existing rules
       addRules: rules
     });
+    
+    // Delete all history entries for blocked websites when the list is updated
+    blockedWebsites.forEach(item => {
+      try {
+        // Format the website URL properly for history deletion
+        let websiteHostname;
+        if (item.website.startsWith('http://') || item.website.startsWith('https://')) {
+          websiteHostname = new URL(item.website).hostname;
+        } else {
+          websiteHostname = new URL(`https://${item.website}`).hostname;
+        }
+        
+        // Search for all history entries matching the hostname and delete them
+        chrome.history.search({
+          text: websiteHostname,
+          startTime: 0,
+          maxResults: 1000000  // Maximum number of results to ensure we get everything
+        }, (results) => {
+          results.forEach((historyItem) => {
+            if (historyItem.url.includes(websiteHostname)) {
+              chrome.history.deleteUrl({ url: historyItem.url });
+            }
+          });
+        });
+      } catch (e) {
+        console.error(`Error processing website for history deletion: ${item.website}`, e);
+      }
+    });
   });
 };
 
