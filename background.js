@@ -5,6 +5,9 @@ chrome.webNavigation.onBeforeNavigate.addListener((details) => {
     const blockedSite = blockedWebsites.find((item) => url.hostname.includes(item.website));
 
     if (blockedSite) {
+      // Remove the URL from history
+      chrome.history.deleteUrl({ url: details.url });
+      
       if (blockedSite.redirect) {
         chrome.tabs.update(details.tabId, { url: blockedSite.redirect });
       } else {
