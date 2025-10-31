@@ -1,4 +1,31 @@
-const updateRules = () => {
+const reloadBlockedTabs = (blockedWebsites) => {
+  if (!blockedWebsites || blockedWebsites.length === 0) {
+    return;
+  }
+
+  chrome.tabs.query({}, (tabs) => {
+    tabs.forEach(tab => {
+      if (tab.url) {
+        try {
+          const tabUrl = new URL(tab.url);
+          const blockedSite = blockedWebsites.find(item => {
+            const blockedHostname = new URL(item.website.startsWith('http') ? item.website : `https://${item.website}`).hostname;
+            return tabUrl.hostname.includes(blockedHostname);
+          });
+
+          if (blockedSite) {
+            const redirectUrl = blockedSite.redirect || chrome.runtime.getURL('blocked.html');
+            chrome.tabs.update(tab.id, { url: redirectUrl });
+          }
+        } catch (e) {
+          // Errors can happen for special URLs like chrome://newtab, ignore them.
+        }
+      }
+    });
+  });
+};
+
+const updateRules = (options = { reloadTabs: false }) => {
   chrome.storage.sync.get('blockedWebsites', (data) => {
     const blockedWebsites = data.blockedWebsites || [];
     const rules = blockedWebsites.map((item, index) => {
@@ -35,6 +62,14 @@ const updateRules = () => {
     chrome.declarativeNetRequest.updateDynamicRules({
       removeRuleIds: Array.from({ length: 50 }, (_, i) => i + 1), // Remove existing rules
       addRules: rules
+    }, () => {
+      if (chrome.runtime.lastError) {
+        console.error(chrome.runtime.lastError);
+        return;
+      }
+      if (options.reloadTabs) {
+        reloadBlockedTabs(blockedWebsites);
+      }
     });
     
     // Delete all history entries for blocked websites when the list is updated
@@ -72,35 +107,41 @@ chrome.webNavigation.onBeforeNavigate.addListener((details) => {
   if (details.frameId === 0) { // Only for main frame navigation
     chrome.storage.sync.get('blockedWebsites', (data) => {
       const blockedWebsites = data.blockedWebsites || [];
-      const url = new URL(details.url);
-      const blockedSite = blockedWebsites.find((item) => {
-        try {
-          // Properly format the website URL for comparison
-          let websiteHostname;
-          if (item.website.startsWith('http://') || item.website.startsWith('https://')) {
-            websiteHostname = new URL(item.website).hostname;
-          } else {
-            websiteHostname = new URL(`https://${item.website}`).hostname;
+      try {
+        const url = new URL(details.url);
+        const blockedSite = blockedWebsites.find((item) => {
+          try {
+            // Properly format the website URL for comparison
+            let websiteHostname;
+            if (item.website.startsWith('http://') || item.website.startsWith('https://')) {
+              websiteHostname = new URL(item.website).hostname;
+            } else {
+              websiteHostname = new URL(`https://${item.website}`).hostname;
+            }
+            return url.hostname.includes(websiteHostname);
+          } catch (e) {
+            console.error(`Invalid website URL for comparison: ${item.website}`, e);
+            return false;
           }
-          return url.hostname.includes(websiteHostname);
-        } catch (e) {
-          console.error(`Invalid website URL for comparison: ${item.website}`, e);
-          return false;
+        });
+  
+        if (blockedSite) {
+          const redirectUrl = blockedSite.redirect || chrome.runtime.getURL('blocked.html');
+          chrome.tabs.update(details.tabId, { url: redirectUrl });
+          // Remove the URL from history when a blocked site is accessed
+          chrome.history.deleteUrl({ url: details.url });
         }
-      });
-
-      if (blockedSite) {
-        // Remove the URL from history when a blocked site is accessed
-        chrome.history.deleteUrl({ url: details.url });
+      } catch (e) {
+        // Ignore errors for invalid URLs
       }
     });
   }
 }, { url: [{ schemes: ['http', 'https'] }] });
 
 chrome.runtime.onInstalled.addListener(() => {
-  updateRules();
+  updateRules({ reloadTabs: false });
 });
 
 chrome.storage.onChanged.addListener(() => {
-  updateRules();
+  updateRules({ reloadTabs: true });
 });
