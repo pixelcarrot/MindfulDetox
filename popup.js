@@ -11,6 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const saveButton = document.getElementById('save-button');
   const redirectToInput = document.getElementById('redirect-to-input');
   const redirectSaveButton = document.getElementById('redirect-save-button');
+  const exportButton = document.getElementById('export-button');
+  const importButton = document.getElementById('import-button');
+  const importFileInput = document.getElementById('import-file-input');
 
   let editingWebsite = null;
   let redirectItem = null;
@@ -160,6 +163,71 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (!event.target.matches('.dropdown button')) {
       closeAllDropdowns();
+    }
+  });
+
+  // Export functionality
+  exportButton.addEventListener('click', () => {
+    chrome.storage.sync.get('blockedWebsites', (data) => {
+      const blockedWebsites = data.blockedWebsites || [];
+      const backupData = {
+        version: '1.0',
+        timestamp: new Date().toISOString(),
+        blockedWebsites: blockedWebsites
+      };
+      
+      const dataStr = JSON.stringify(backupData, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `detox-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    });
+  });
+
+  // Import functionality
+  importButton.addEventListener('click', () => {
+    importFileInput.click();
+  });
+
+  importFileInput.addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const backupData = JSON.parse(e.target.result);
+          
+          // Validate backup data structure
+          if (!backupData.blockedWebsites || !Array.isArray(backupData.blockedWebsites)) {
+            alert('Invalid backup file format.');
+            return;
+          }
+          
+          // Get current blocked websites count for confirmation
+          chrome.storage.sync.get('blockedWebsites', (data) => {
+            const currentCount = (data.blockedWebsites || []).length;
+            const confirmMsg = `This will replace your current ${currentCount} blocked website(s) with ${backupData.blockedWebsites.length} from the backup. Continue?`;
+            
+            if (confirm(confirmMsg)) {
+              chrome.storage.sync.set({ blockedWebsites: backupData.blockedWebsites }, () => {
+                blockedList.innerHTML = '';
+                backupData.blockedWebsites.forEach(renderBlockedWebsite);
+                alert('Backup imported successfully!');
+              });
+            }
+          });
+        } catch (error) {
+          alert('Error reading backup file: ' + error.message);
+        }
+      };
+      reader.readAsText(file);
+      // Reset file input so the same file can be selected again if needed
+      event.target.value = '';
     }
   });
 });

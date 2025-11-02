@@ -158,3 +158,40 @@ body {
 .dropdown-content a:hover {background-color: #f1f1f1}
 
 .show {display:block;}
+
+.backup-section {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #ddd;
+}
+
+.backup-section button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+#export-button {
+  background-color: #28a745;
+  color: white;
+}
+
+#export-button:hover {
+  background-color: #218838;
+}
+
+#import-button {
+  background-color: #6c757d;
+  color: white;
+}
+
+#import-button:hover {
+  background-color: #5a6268;
+}
