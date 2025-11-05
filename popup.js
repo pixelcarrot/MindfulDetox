@@ -14,6 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const exportButton = document.getElementById('export-button');
   const importButton = document.getElementById('import-button');
   const importFileInput = document.getElementById('import-file-input');
+  const imageUploadInput = document.getElementById('image-upload-input');
+  const saveImageButton = document.getElementById('save-image-button');
 
   let editingWebsite = null;
   let redirectItem = null;
@@ -233,6 +235,19 @@ document.addEventListener('DOMContentLoaded', () => {
       reader.readAsText(file);
       // Reset file input so the same file can be selected again if needed
       event.target.value = '';
+    }
+  });
+
+  saveImageButton.addEventListener('click', () => {
+    const file = imageUploadInput.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        chrome.storage.local.set({ blockedScreenImage: e.target.result }, () => {
+          alert('Blocked screen image saved!');
+        });
+      };
+      reader.readAsDataURL(file);
     }
   });
 });
