@@ -1,6 +1,16 @@
-# Project Overview
+# Mindful Detox
 
-This project is a simple Chrome extension that allows users to block websites. Users can also specify a redirect URL for a blocked website. If no redirect URL is provided, a default "This site is blocked" message will be shown.
+![Mindful Detox Interface](images/intro.png)
+
+## Product Overview
+
+Mindful Detox is a Chrome extension designed to help you break the habit of passively consuming toxic content from the internet. Stay focused and block distractions by preventing access to websites that waste your time or negatively impact your wellbeing.
+
+### Features
+
+- **Website Blocking**: Block any website with a simple interface
+- **Custom Redirects**: Optionally redirect blocked sites to productive alternatives
+- **Mindful Browsing**: Break unconscious browsing habits and regain control of your attention
 
 The extension is built using HTML, CSS, and JavaScript.
 
