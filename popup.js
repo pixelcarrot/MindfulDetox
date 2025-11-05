@@ -42,8 +42,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderBlockedWebsite(item) {
     const listItem = document.createElement('li');
-    listItem.textContent = `${item.website} ${item.redirect ? `-> ${item.redirect}` : ''}`;
-
+    
+    const websiteText = document.createElement('span');
+    websiteText.classList.add('website-text');
+    websiteText.textContent = `${item.website} ${item.redirect ? `-> ${item.redirect}` : ''}`;
+    websiteText.title = `${item.website} ${item.redirect ? `-> ${item.redirect}` : ''}`;  // Tooltip for full text
+    
     const dropdown = document.createElement('div');
     dropdown.classList.add('dropdown');
 
@@ -96,6 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
     dropdown.appendChild(dropDownButton);
     dropdown.appendChild(dropdownContent);
 
+    listItem.appendChild(websiteText);
     listItem.appendChild(dropdown);
     blockedList.appendChild(listItem);
   }
