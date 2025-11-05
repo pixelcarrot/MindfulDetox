@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const importFileInput = document.getElementById('import-file-input');
   const imageUploadInput = document.getElementById('image-upload-input');
   const saveImageButton = document.getElementById('save-image-button');
+  const removeImageButton = document.getElementById('remove-image-button');
 
   let editingWebsite = null;
   let redirectItem = null;
@@ -249,5 +250,11 @@ document.addEventListener('DOMContentLoaded', () => {
       };
       reader.readAsDataURL(file);
     }
+  });
+
+  removeImageButton.addEventListener('click', () => {
+    chrome.storage.local.remove('blockedScreenImage', () => {
+      alert('Blocked screen image removed!');
+    });
   });
 });
